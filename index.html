@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple AI Plant Identifier</title>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; margin: 20px; }
+        img { width: 250px; margin: 10px; border-radius: 10px; display: none; }
+        #result { font-size: 20px; font-weight: bold; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <h2>🌿 Simple Plant Identifier</h2>
+    <input type="file" id="imageInput" accept="image/*" />
+    <br>
+    <img id="preview" />
+    <p id="loading" style="color: red; display: none;">Identifying... Please wait</p>
+    <p id="result">Plant: </p>
+    <p id="benefits">Health Benefits: </p>
+
+    <script>
+        document.getElementById("imageInput").onchange = async function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const img = document.getElementById("preview");
+            img.src = URL.createObjectURL(file);
+            img.style.display = "block";
+
+            document.getElementById("loading").style.display = "block";
+
+            // Convert image to Base64
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = async function () {
+                const base64Image = reader.result.split(",")[1];
+
+                // Send image to Plant.id API
+                const response = await fetch("https://api.plant.id/v2/identify", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Api-Key": "GBSMPe3AcDLHS8CKbQTErzpmm62kKQu1VljIdsmOZojzZqwsAQ"  // Get API Key from Plant.id
+                    },
+                    body: JSON.stringify({
+                        images: [base64Image],
+                        organs: ["leaf"],
+                        details: ["common_names"]
+                    })
+                });
+
+                const data = await response.json();
+                console.log(data); // Debugging: Check API response
+
+                if (data.suggestions.length > 0) {
+                    const plant = data.suggestions[0].plant_name;
+                    const benefits = getHealthBenefits(plant);
+
+                    document.getElementById("result").innerText = `🌿 Plant: ${plant}`;
+                    document.getElementById("benefits").innerText = `💚 Health Benefits: ${benefits}`;
+                } else {
+                    document.getElementById("result").innerText = "❌ No plant identified";
+                    document.getElementById("benefits").innerText = "";
+                }
+
+                document.getElementById("loading").style.display = "none";
+            };
+        };
+
+        // Function to Get Health Benefits
+        function getHealthBenefits(plant) {
+    const benefitsList = {
+        "aloe vera": "Soothes skin, aids digestion, and boosts immunity.",
+        "mint": "Improves digestion, relieves headaches, and freshens breath.",
+        "neem": "Purifies blood, treats acne, and supports oral health.",
+        "basil": "Reduces stress, supports respiratory health, and is anti-inflammatory.",
+        "tulsi": "Boosts immunity, reduces stress, and treats colds.",
+        "moringa": "Rich in vitamins, improves energy, and supports bone health.",
+        "rosemary": "Boosts memory, supports digestion, and promotes hair growth.",
+        "lemongrass": "Aids digestion, relieves pain, and has antibacterial properties.",
+        "turmeric": "Powerful anti-inflammatory, improves skin health, and supports liver function.",
+        "ginger": "Relieves nausea, aids digestion, and reduces muscle pain."
+    };
+
+    const plantLower = plant.toLowerCase(); // Convert API plant name to lowercase
+
+    return benefitsList[plantLower] || "No health benefits found.";
+}
+
+    </script>
+
+</body>
+</html>
